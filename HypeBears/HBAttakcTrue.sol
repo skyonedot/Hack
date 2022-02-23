@@ -9,7 +9,7 @@ interface IAir {
 
 
 //部署这个类
-contract batch_claim_token is IERC721Receiver  {
+contract Hack is IERC721Receiver  {
 
 
     constructor(){}
