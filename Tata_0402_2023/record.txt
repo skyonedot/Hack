@@ -1,0 +1,220 @@
+Tata_Self是自己改了改, 一些private 改成了 public
+Tata 是原生
+hack.sol 也是原生
+DDoge 是另外一个被工具的
+
+核心点在于 Burn之后, 手上的币不会减少那么多, 反而池子里的币减少的更多
+
+6% redistribution 6%的交易税, 每次trade, 会扣除6%分配给持有者
+3% PCS LP Feedback, 每次交易收3%, 奖励LP, 具体来说 将这3%购买该Token和某个稳定币, 然后配对加到池子里
+7% Burn Pool Fee, 每次交易收7%, 用于购买并销毁Token
+1% Charity Donation Pool, 每次收1%, 进入到捐赠池子
+1% Marketing & BD Pool, 每次收1%, 进入团队市场营销池子
+
+
+https://bscscan.com/token/0x355389292d8c963719fdaf0651f7846d6c504448#code
+
+hacker contract: https://bscscan.com/address/0x1d79fcb1961b39363e6f4998957d8e92ab85c568
+
+profit tx: https://bscscan.com/tx/0x0e793df787badac2a0340bbb8523a8abc7e685df23a928809c54d0d636eda6b4
+
+_tTotal 初始值是总量 (一般代表TokenSupply, 不包含那些excluded地址的持有[这里,,从哪里看出来的? 不包含execluded? ])
+_rTotal 最大值 减去 最大值%_tTotal, 一般代表 (Reflection Supply, 即包含excluded那些地址的持有)
+    这样rTotal的初始值是 可以整除su*de的最大整数
+tTotal 是 Token的总数量, 没毛病
+rTotal, 是 可以整除tTotal总数量 的 最大整数
+    只有deliver 和 ReflectFee 时改变
+_rOwned[tokenOwner] = _rTotal
+
+balanceOf:
+    _isExcluded 如果是true, 返回 _tOwned[account]
+    False, tokenFromReflection[r_Owned[account]]
+        tokenFromReflection, 传入一个rAmount, rAmount/_getRate()
+            _getRate(), 是, rSupply/tSupply
+                _excluded 是一个address[], 项目方指定的特权的一批地址,(免于支付交易手续费)
+
+deliver:
+    msg.from 的 isExcluded是False, 特权的那些地址, 是不能deliver的
+    deliver 一般用于Token Holder的再分配
+    执行完毕之后, _rOwned[msg.sender] 会减少, 动力在哪?
+
+_getValues:
+    传入tAmount, 
+    1. _getTBasics(tAmount,_TAX_FEE, _BURN_FEE, _CHARITY_FEE) 返回 tAmount 所需要交的税费(三个相乘)[tFee, tBurn, tCharity]
+    2. getTTransferAmount(tAmount,tFee,tBurn,tCharity) tAmount减去后面的三个(后面这三个参数 是上面相乘的结果) 返回 tTransferAmount
+    3. currentRate = _getRate()
+    4. _getRBasics(tAmount, tFee, currentRate) 返回 rAmount(tAmount*currentRate) 和 rFee (tFee*currenctRate)
+    5. _getRTransferAmount(rAmount, rFee, tBurn, tCharity, currentRate) 
+        先计算rBurn = tBurn * currenctRate
+        再计算rCharity = tCharity * currentRate
+        最后计算 rTransferAmount = rAmount - (rFee + rBurn + rCharity)
+        返回 rTransferAmount
+    最后返回
+        1. rAmount(tAmount*currenctRate)
+        2. rTransferAmount() [5]
+        3. rFee [4]
+        4. tTransferAmount [2]
+        5. tFee, tBurn, tCharity [1]
+
+_getRate()
+    _getCurrentSupply() 
+        这个函数, 先拿rTotal, tTotal, 赋值rSupply,tSupply
+        然后把所有的execluded地址遍历一遍
+            查看是否有地址的rOwned超过了rSupply, 或者 tOwned超过了tSupply, 如果是 返回rTotal, _tTotal
+            如果不是, rSupply = rSupply - rOwned[excluded[i]], 同理tSupply
+        遍历完之后, 判断一下rSupply<rTotal/tTotal, 是的话, 返回rTotal, tTotal
+        没毛病, 返回rSupply, tSupply
+    拿到rSupply, tSupply之后, rSupply / tSupply
+
+_transfer
+    检查 sender 或者 recipient 是不是charity , ecipient 是不是 excluded 是的话 removeAllFee
+        removeAllFee() 这个function 会将 _TAX_FEE == 0 && _BURN_FEE == 0 && _CHARITY_FEE == 0 这三个变量都变成0
+            同时, 将他们原本的值赋给 ORIG_TAX_FEE, ORIG_BURN_FEE, ORIG_CHARITY_FEE
+            这个函数 只会在 _tranfer中用一次
+    Transfer的几种情况
+        如果sender是 execluded, 而 recipient不是 执行 _transferFromExcluded
+        如果sender不是, 而recipient是, 执行 _transferToExcluded
+        如果两个都不是 执行 _transferStandard
+        如果两个都是 执行 _transferBothExcluded
+        其余情况 执行 _transferStandard, 有其余情况么??
+    最后会把Fee返回回来, 即ORIG的那些值 在给到原来的变量
+    ---------------------------------------------
+    也就是 如果 满足上面一开始的三个条件, 那么 _TAX_FEE == 0 && _BURN_FEE == 0 && _CHARITY_FEE == 0 这三个 都是 0
+        如果都是0, 那么 tFee, tBurn, tCharity都是0
+    并且, 最后还会把Fee给Restore回来
+    ---------------------------------------------
+    先考虑最简单的情况, 即双方都不是特殊人,  那么执行 _transferStandard
+
+_transferFromExcluded(sender, recipient, tAmount)[这里的tAmount, 代表传入的时候的amount, 即转账的amount]
+    1. 先用_getRate() 拿到rSupply/tSupply 
+    2. 利用_getValues(tAmount), 返回 rAmount, rTransferAmount, rFee, tTransferAmount, tFee, tBurn, tCharity
+
+    3. 计算 rBurn = tBurn * currenctRate
+    4. 计算 rCharity = tCharity * currenctRate
+    5. 执行 _excludedToTransferContent(sender, recipient, tAmount, rAmount, rTransferAmount) 🌺 只有这一步不同
+        没有返回值, 只是会改变下面这俩mapping存储的值
+            _tOwned[sender] = _tOwned[sender] - tAmount
+            _rOwned[sender] = _rOwned[sender] - tAmount
+            _rOwned[recipient] = _rOwned[recipient] + rTransferAmount
+    6. 执行 _sendToCharity(tCharity, sender)
+        1. 拿 currenctRate
+        2. 计算 rCharity = tCharity * currenctRate
+        3. _rOwned[FeeAddress] += rCharity
+        4. _tOwned[FeeAddress] += tCharity
+    7. 执行 _reflectFee(rFee, rBurn, rCharity, tFee, tBurn, tCharity) 
+        没有返回值, 会改变一些数据
+        1. _rTotal = _rTotal - rFee - rBurn - rCharity
+        2. _tFeeTotal += tFee
+        3. _tBurnTotal += tBurn
+        4. _tCharityTotal += tCharity
+        5. _tTotal -= tBurn
+
+
+
+_transferFromExcluded vs _transferToExcluded vs _transferBothExcluded vs _transferStandard
+    0. 这四个传递的参数都是一样的
+    1. 只有一行不同, 这四个小命令行, 传递的参数 是不一样的, 注意看 🍄
+        1. _transferFromExcluded -- _excludedToTransferContent(sender, recipient, tAmount, rAmount, rTransferAmount)
+            _tOwned[sender] -= tAmount
+            _rOwned[sender] -= rAmount
+            _rOwned[recipient] += rTransferAmount
+        2. _transferToExcluded -- _excludedFromTransferContent(sender, recipient, tTransferAmount, rAmount, rTransferAmount)
+            _rOwned[sender] -= rAmount
+            _tOwned[recipient] += tTransferAmount
+            _rOwned[recipient] += rTransferAmount
+        3. _transferBothExcluded -- _bothTransferContent(sender, recipient, tAmount, rAmount, tTransferAmount, rTransferAmount)
+            _tOwned[sender] -= tAmount
+            _rOwned[sender] -= rAmount
+            _tOwned[recipient] += tTransferAmount
+            _rOwned[recipient] += rTransferAmount
+        4. _transferStandard -- _standardTransferContent(sender, recipient, rAmount, rTransferAmount)
+            _rOwned[sender] -= rAmount
+            _rOwned[recipient] += rTransferAmount
+
+burn(value) 
+    _burn(msg.sender, _value), 改变两个量, 一个是 _rOwned[msg.sender], 一个是 _tTotal
+        1. 确定 _value <= _rOwned[msg.sender] 即 有能力销毁, 并且销毁的是 _rOwned 
+        2. _rOwned[msg.sender] -= _value 
+        3. _tTotal -= _value 
+
+
+---
+Swap的Router 调用的 都是 transferFrom, 进而_tranfer, 进而引出四种情况
+
+https://phalcon.xyz/tx/bsc/0x0e793df787badac2a0340bbb8523a8abc7e685df23a928809c54d0d636eda6b4
+    交易过程参照这张图  、«
+        1. 先借贷667BNB
+            这时候池子里 https://bscscan.com/address/0xca7a6300694f7db0f8427b4b24402b1c1d79f4cc 
+            有12*1e-9 个 TATA, 以及 132 * 1e18 个 BNB 
+        2. 然后667BNB Swap 一笔, 出来 10*1e-9 个TATA
+            Swap完之后, 池子里有 2*1e-9 TATA, 以及 799个 BNB
+        3. 然后 Burn 掉 8*1e-9 个TATA 
+            销毁完之后, 池子里只有 1*1e-9 TATA, 以及 799个 BNB (少了 1 TATA)
+            > burn 这一步, 会改变 _rOwned[msg.sender] 以及 _tTotal 
+            > 那再Check 某个Account 对BalanceOf的时候, 
+                如果这个Account 不是 Excluded 的, 
+                    那么返回 tokenFromReflection[_rOwned[account]]
+                        在这个计算中, _rOwned[msg.sender]的余额, 是变大了, 🍄 
+                            好像, 点就在这里
+        4. 下一步是用 6*1e-9 个 TATA Swap出来 685.39个BNB
+             重点在这里, 为什么一开始拿到了10个, 烧掉8个, 还有6个?
+                因为在burn的时候, 会改变每个account的余额, 虽然etherscan上面不显示, 但是数据是的的确确改变了的
+             那为什么burn之后, 这个人的余额增多了?
+                这里就要推导一下公式了
+                    balanceOf[msg.sender] = _rOwned[msg.sender] * (_tTotal / _rTotal)
+                    burn 改变的是 _rOwned[msg.sender]变少, _tTotal变少, _rTotal不变
+                        那为什么 这个人的Balance 反而多了呢?  按照数学公式 它不应该减少么
+                            对, 就是减少了, 这一点从池子的余额可以佐证判断出来, 因为burn之前, 余额是2, burn之后 余额是1, 所以池子地址肯定不是execluded
+                                对于池子来说, _rOwned[pool] 没变, _tTotal变少 , _rTotal不变, 所以从2变成了1
+                            hack.sol 154行之前, 没有sync时, 余额还是2, sync之后, 余额变成了6
+                                        if (timeElapsed > 0 && _reserve0 != 0 && _reserve1 != 0) {
+                                            // * never overflows, and + overflow is desired
+                                            price0CumulativeLast += uint(UQ112x112.encode(_reserve1).uqdiv(_reserve0)) * timeElapsed;
+                                            price1CumulativeLast += uint(UQ112x112.encode(_reserve0).uqdiv(_reserve1)) * timeElapsed;
+                                        }
+                                        LP中的这段 不会执行, 因为timeElapsed等于0, 370行
+                                        Sync完之后, 池子里的BNB没变, 但是Taca从2变成1(的确是Token值钱了 没问题)
+                                            唯一的坑 在于 只要我有5个以上(对半嘛, 价格飚一倍, 数量可以少一半, 那就稳赚)
+                                                所以 找到 数量如何从2 变成了 6 就是重点 
+                    破案了, 首先明确的是 上面的推导没有问题, 因为在Burn的时候, _rOwned[msg.sender], _tTotal都减少, _rTotal不变 所以balanceOf是减少的
+                    我们的余额的确减少了, 是从10 减少到了6~!!!!, 理应减少8(销毁了8), 即只剩下2, 但是经过实战检验, 假设A,B两个Account, 都是普通的
+                    A持有10000, B持有1000, 当A决定销毁1000的时候, A剩余的余额会比10000 - 1000 这个数要大 🍄
+                    是的, 重点在于减少, 没问题,, 但是减少的要小一些, 并不会减少那么多, 这就是Point, 和 Deliver 函数 关系并不大
+                            
+                                    
+
+
+        5. 还款获利
+
+
+
+Router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+    LoanToken.balanceOf(address(this)),
+    0,
+    buyPath,
+    address(this),
+    block.timestamp
+);
+
+
+
+ExpTokenLP.sync();
+中间会有一次burn, 会影响价格吗?
+
+Router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+    ExpToken.balanceOf(address(this)),
+    0,
+    sellPath,
+    address(this),
+    block.timestamp
+);
+
+
+两次swap之后, 就有这么多利润?
+
+如果Receipient是Charity, 很正常的Token
+不是 则会更改tTotal, rTotal
+
+
+
+不光是Tata Token, 还有别的Token ,比如DDoge
