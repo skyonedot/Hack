@@ -1,0 +1,6 @@
+[submodule "Pancake/PancakeForge/lib/forge-std"]
+	path = Pancake/PancakeForge/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "Pancake/PancakeForge/lib/openzeppelin-contracts"]
+	path = Pancake/PancakeForge/lib/openzeppelin-contracts
+	url = https://github.com/openzeppelin/openzeppelin-contracts

@@ -118,3 +118,4 @@ deliver, 除了对自己, 其余的对总体的影响 只有 使得 _rTotal 减�
 第二部Swap, 即OLIFE --> WBNB, 利用的是 OLIFE_WBNB_LPPool.swap
 // 疑点1 🍄
 // 已经解决, 用pancakeRouter 或者 自己的LP都可以实现, 不过代码有一定出入, 详情参看 https://github.com/skyonedot/DeFiHackLabs/blob/61af80870b8c2261cf51acc070b49a50788c7b1b/src/test/OLIFE_exp.sol#L106
+// swap的原理 是 直接与pair交互 (pair既充当了Token, 也充当了中介), 如果用Swap的话, 常规来水一定自己有一步transfer进去的tx(或者使得另一个Token的余额发生改动的Tx), 这里面是各种操作 导致余额改动了, 所以没看到有transfer进去的.
