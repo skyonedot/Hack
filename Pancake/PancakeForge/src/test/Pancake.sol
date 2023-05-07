@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.0;
 
-import {MyERC20} from "../src/ERC20.sol";
+import {MyERC20} from "../ERC20.sol";
 import "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 
@@ -16,7 +16,7 @@ contract ERC20Test is Test {
     function setUp() public {
         tokenA = new MyERC20();
         tokenB = new MyERC20();
-        // vm.createSelectFork("bsc");
+        // vm.createSelectFork("bsc",27470678);
     }
 
     function test_addliquidity() public {
@@ -91,10 +91,5 @@ interface IERC20 {
 }
 
 interface IUniswapV2Pair {
-    function swap (
-        uint256 amount0Out,
-        uint256 amount1Out,
-        address to,
-        bytes calldata data
-    ) external;
+    function swap(uint256 amount0Out, uint256 amount1Out, address to, bytes calldata data) external;
 }
