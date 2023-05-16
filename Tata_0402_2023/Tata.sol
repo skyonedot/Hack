@@ -496,7 +496,6 @@ contract CoinToken is Context, IBEP20, Ownable {
 		FeeAddress = _FeeAddress;
 		_owner = tokenOwner;
         _rOwned[tokenOwner] = _rTotal;
-		
         emit Transfer(address(0),tokenOwner, _tTotal);
     }
 

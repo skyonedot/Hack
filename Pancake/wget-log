@@ -1,0 +1,25 @@
+--2023-05-06 06:50:48--  https://api.foxe.vip/api/merkle/0x8a09FB23E1c8d0FF9c9Fef0BcFc9b9e07B1f0667
+Resolving api.foxe.vip (api.foxe.vip)... 198.11.172.205
+Connecting to api.foxe.vip (api.foxe.vip)|198.11.172.205|:443... failed: Connection timed out.
+Retrying.
+
+--2023-05-06 06:52:58--  (try: 2)  https://api.foxe.vip/api/merkle/0x8a09FB23E1c8d0FF9c9Fef0BcFc9b9e07B1f0667
+Connecting to api.foxe.vip (api.foxe.vip)|198.11.172.205|:443... connected.
+HTTP request sent, awaiting response... 504 Gateway Time-out
+Retrying.
+
+--2023-05-06 06:54:54--  (try: 3)  https://api.foxe.vip/api/merkle/0x8a09FB23E1c8d0FF9c9Fef0BcFc9b9e07B1f0667
+Reusing existing connection to api.foxe.vip:443.
+HTTP request sent, awaiting response... 504 Gateway Time-out
+Retrying.
+
+--2023-05-06 06:56:13--  (try: 4)  https://api.foxe.vip/api/merkle/0x8a09FB23E1c8d0FF9c9Fef0BcFc9b9e07B1f0667
+Reusing existing connection to api.foxe.vip:443.
+HTTP request sent, awaiting response... 504 Gateway Time-out
+Retrying.
+
+--2023-05-06 06:57:37--  (try: 5)  https://api.foxe.vip/api/merkle/0x8a09FB23E1c8d0FF9c9Fef0BcFc9b9e07B1f0667
+Reusing existing connection to api.foxe.vip:443.
+HTTP request sent, awaiting response... 502 Bad Gateway
+2023-05-06 06:57:52 ERROR 502: Bad Gateway.
+
