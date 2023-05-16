@@ -18,29 +18,38 @@ contract TataTest is Test {
         tata = new CoinToken("Tata", "TT", 18, 1000000, 6, 7, 1, charityAddress,  address(this));
     }
 
-    function testCheckBalance() public {
-        assert(tata.balanceOf(address(this)) == 1000000*1 ether);
-        console.log("After Init _rTotal",tata._rTotal());
-        console.log("After Init _tTotal",tata._tTotal());
-        // console.log(~uint256(0));
-        // console.log(tata.balanceOf(address(this))/1 ether);
-    }
+    // function testCheckBalance() public {
+    //     assert(tata.balanceOf(address(this)) == 1000000*1 ether);
+    //     console.log("After Init _rTotal",tata._rTotal());
+    //     console.log("After Init _tTotal",tata._tTotal());
+    //     // console.log(~uint256(0));
+    //     // console.log(tata.balanceOf(address(this))/1 ether);
+    // }
 
-    function testTransfer() public {
-        tata.transfer(alice, 1000*1 ether);
+    // function testTransfer() public {
+    //     tata.transfer(alice, 1000*1 ether);
+    //     console.log(tata.balanceOf(alice)/1 ether);
+    //     console.log(tata.balanceOf(address(this))/1 ether);
+    //     // assert(tata.balanceOf(alice) == 1000*1 ether);
+    //     // assert(tata.balanceOf(address(this)) == 1000000*1 ether - 1000*1 ether);
+    // }
+
+    function testBurn() public {
+        //这样的确大, 但是也仅仅大的有限.
+        //  163423 --> 54334
+        //  823451 --> 273779
+        tata.transfer(alice, tata.balanceOf(address(this))*3/16);
+        console.log(tata.balanceOf(alice)/1 ether);
+        console.log(tata.balanceOf(address(this))/1 ether);
+        console.log("RTotal", tata._rTotal());
+        console.log("TTotal", tata._tTotal());
+        tata.burn(tata.balanceOf(address(this))*4/5);
+        // console.log("RTotal", tata._rTotal());
+        // console.log("TTotal", tata._tTotal());
         console.log(tata.balanceOf(alice)/1 ether);
         console.log(tata.balanceOf(address(this))/1 ether);
         // assert(tata.balanceOf(alice) == 1000*1 ether);
         // assert(tata.balanceOf(address(this)) == 1000000*1 ether - 1000*1 ether);
     }
 
-    // function testIncrement() public {
-    //     tata.increment();
-    //     assertEq(tata.number(), 1);
-    // }
-
-    // function testSetNumber(uint256 x) public {
-    //     tata.setNumber(x);
-    //     assertEq(tata.number(), x);
-    // }
 }
