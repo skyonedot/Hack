@@ -31,7 +31,7 @@ forge test --contracts ./src/test/Pancake.sol -vvv --rpc-url https://bsc-mainnet
 如果是
 .src
     .test
-这种情况下 即隶属  forge test --match-path And forge test --contracts 这两个 都可以 运行一个 
+这种情况下 即隶属  forge test --match-path And forge test --contracts 这两个 都可以 运行某一个 
 
 好吧, 大概知道是什么情况了, 
 如果有Mint Token, 发代笔的这种情况 还想要用其余网络上的Router, 那就只能 带有rpc, 而且还不能有createSelectFolk这些
